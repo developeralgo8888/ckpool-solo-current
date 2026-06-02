@@ -1371,6 +1371,16 @@ static txntable_t *wb_merkle_bin_txns(ckpool_t *ckp, sdata_t *sdata, workbase_t 
 	yyjson_val *arr_val;
 	yyjson_mut_val *arr;
 	uchar *hashbin;
+	char *fname;
+	FILE *fp;
+
+	ASPRINTF(&fname, "%s/pool/pool.txns", ckp->logdir);
+	fp = fopen(fname, "we");
+	if (unlikely(!fp)) {
+		LOGERR("Failed to fopen %s", fname);
+		return txns;
+	}
+	dealloc(fname);
 
 	wb->txns = yyjson_arr_size(txn_array);
 	wb->merkles = 0;
@@ -1411,6 +1421,7 @@ static txntable_t *wb_merkle_bin_txns(ckpool_t *ckp, sdata_t *sdata, workbase_t 
 				LOGERR("Missing txid for transaction in wb_merkle_bins");
 				goto out;
 			}
+			fprintf(fp, "%s\n", txid);
 			txn = yyjson_get_str(yyjson_obj_get(arr_val, "data"));
 			add_txn(ckp, sdata, &txns, hash, txn, local);
 			len = strlen(txn);
@@ -1454,6 +1465,7 @@ static txntable_t *wb_merkle_bin_txns(ckpool_t *ckp, sdata_t *sdata, workbase_t 
 	LOGNOTICE("Stored %s workbase with %d transactions", local ? "local" : "remote",
 		  wb->txns);
 out:
+	fclose(fp);
 	return txns;
 }
 
